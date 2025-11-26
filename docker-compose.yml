@@ -1,15 +1,62 @@
 services:
+  app:
+   build: .
+   ports:
+    - "8080:8080"
+   depends_on:
+    db:
+     condition: service_healthy
+   environment:
+     - DB_USER=postgres
+     - DB_HOST=db
+     - DB_PASSWORD=password
+     - DB_NAME=qna_db
+     - DB_PORT=5432
+     - DB_SSLMODE=disable
+   env_file:
+     - .env
+   restart: unless-stopped
+  
   db:
-    image: postgres:16
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: qna_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+   image: postgres:15-alpine
+   environment:
+    - POSTGRES_DB=qna_db
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=password
+   ports:
+    - "5432:5432"
+   volumes:
+    - postgres_data:/var/lib/postgresql/data
+   restart: unless-stopped
+   healthcheck:
+     test: ["CMD-SHELL", "pg_isready -U postgres -d qna_db"]
+     interval: 5s
+     timeout: 5s
+     retries: 5
+     start_period: 10s
+  
+  migrations:
+   build: .
+   depends_on:
+    db:
+     condition: service_healthy
+   environment:
+    - DB_HOST=db
+    - DB_PORT=5432
+    - DB_USER=postgres
+    - DB_PASSWORD=password
+    - DB_NAME=qna_db
+   env_file:
+    - .env
+   command: >
+    sh -c "
+        echo 'Checking migration status...' &&
+        goose -dir /app/migrations postgres 'user=postgres password=password dbname=qna_db host=db sslmode=disable' status ||
+        (echo 'Initializing migrations...' &&
+         goose -dir /app/migrations postgres 'user=postgres password=password dbname=qna_db host=db sslmode=disable' up) &&
+        echo 'Migrations completed successfully'
+      "
+   profiles: ["migrations"]
 
 volumes:
   postgres_data:

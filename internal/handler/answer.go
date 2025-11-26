@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ppb03/question-answer-api/internal/models"
-	"github.com/ppb03/question-answer-api/internal/service"
+	"github.com/ppb03/qna-api/internal/model"
+	"github.com/ppb03/qna-api/internal/service"
 )
 
-func CreateAnswer(answerSvc service.AnswerService) http.HandlerFunc {
+func createAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var answer models.Answer
+		var answer model.Answer
 		if err := json.NewDecoder(r.Body).Decode(&answer); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -35,7 +35,7 @@ func CreateAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	}
 }
 
-func GetAnswer(answerSvc service.AnswerService) http.HandlerFunc {
+func getAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {
@@ -59,7 +59,7 @@ func GetAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	}
 }
 
-func DeleteAnswer(answerSvc service.AnswerService) http.HandlerFunc {
+func deleteAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {

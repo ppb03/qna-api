@@ -1,0 +1,18 @@
+meta {
+  name: answers-post-1
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/questions/3/answers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_id": "superuuid123",
+    "text": "Hello there!"
+  }
+}

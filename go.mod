@@ -1,4 +1,4 @@
-module github.com/ppb03/question-answer-api
+module github.com/ppb03/qna-api
 
 go 1.25.4
 

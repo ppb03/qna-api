@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ppb03/question-answer-api/internal/models"
-	"github.com/ppb03/question-answer-api/internal/service"
+	"github.com/ppb03/qna-api/internal/model"
+	"github.com/ppb03/qna-api/internal/service"
 )
 
-func GetAllQuestions(questionSvc service.QuestionService) http.HandlerFunc {
+func getAllQuestions(questionService service.QuestionService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		questions, err := questionSvc.GetAll(r.Context())
+		questions, err := questionService.GetAll(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -22,15 +22,24 @@ func GetAllQuestions(questionSvc service.QuestionService) http.HandlerFunc {
 	}
 }
 
-func CreateQuestion(questionSvc service.QuestionService) http.HandlerFunc {
+func createQuestion(questionService service.QuestionService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var question models.Question
-		if err := json.NewDecoder(r.Body).Decode(&question); err != nil {
+		questionText := struct {
+			Text string `json:"text"`
+		}{}
+		
+		if err := json.NewDecoder(r.Body).Decode(&questionText); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		if err := questionSvc.Create(r.Context(), &question); err != nil {
+		
+		if questionText.Text == "" {
+			http.Error(w, "text cannot be empty", http.StatusBadRequest)
+			return
+		}
+		
+		question := model.Question{Text: questionText.Text}
+		if err := questionService.Create(r.Context(), &question); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -41,7 +50,7 @@ func CreateQuestion(questionSvc service.QuestionService) http.HandlerFunc {
 	}
 }
 
-func GetQuestionWithAnswers(questionSvc service.QuestionService) http.HandlerFunc {
+func getQuestionWithAnswers(questionService service.QuestionService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {
@@ -49,7 +58,7 @@ func GetQuestionWithAnswers(questionSvc service.QuestionService) http.HandlerFun
 			return
 		}
 
-		question, err := questionSvc.GetWithAnswers(r.Context(), uint(id))
+		question, err := questionService.GetWithAnswers(r.Context(), uint(id))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -65,7 +74,7 @@ func GetQuestionWithAnswers(questionSvc service.QuestionService) http.HandlerFun
 	}
 }
 
-func DeleteQuestion(questionSvc service.QuestionService) http.HandlerFunc {
+func deleteQuestion(questionService service.QuestionService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {
@@ -73,7 +82,7 @@ func DeleteQuestion(questionSvc service.QuestionService) http.HandlerFunc {
 			return
 		}
 
-		if err := questionSvc.Delete(r.Context(), uint(id)); err != nil {
+		if err := questionService.Delete(r.Context(), uint(id)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

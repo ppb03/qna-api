@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ppb03/question-answer-api/internal/config"
-	"github.com/ppb03/question-answer-api/internal/handler"
-	"github.com/ppb03/question-answer-api/internal/models"
-	"github.com/ppb03/question-answer-api/internal/service"
-	"github.com/ppb03/question-answer-api/internal/repository"
+	"github.com/ppb03/qna-api/internal/config"
+	"github.com/ppb03/qna-api/internal/handler"
+	"github.com/ppb03/qna-api/internal/model"
+	"github.com/ppb03/qna-api/internal/service"
+	"github.com/ppb03/qna-api/internal/repository"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -22,53 +22,48 @@ import (
 
 func main() {
 	if err := config.Load(); err != nil {
-		slog.Error("failed to load config", "error", err)
+		slog.Error("failed to load config: " +  err.Error())
 		os.Exit(1)
 	}
 
 	db, err := gorm.Open(postgres.Open(config.DBDSN), &gorm.Config{})
 	if err != nil {
-		slog.Error("failed to connect to database", "error", err)
+		slog.Error("failed to connect to database: " + err.Error())
 		os.Exit(1)
 	}
 
-	if err := db.AutoMigrate(&models.Question{}, &models.Answer{}); err != nil {
+	if err := db.AutoMigrate(&model.Question{}, &model.Answer{}); err != nil {
 		slog.Error("failed to run migrations", "error", err)
 		os.Exit(1)
 	}
 
-	questionRepo := repository.NewQuestionRepository(db)
-	answerRepo := repository.NewAnswerRepository(db)
+	questionRepository := repository.NewPostgresQuestionRepository(db)
+	answerRepository := repository.NewPostgresAnswerRepository(db)
 
-	questionSvc := service.NewQuestionService(questionRepo)
-	answerSvc := service.NewAnswerService(answerRepo, questionRepo)
+	questionService := service.NewQuestionService(questionRepository)
+	answerService := service.NewAnswerService(answerRepository, questionRepository)
 
-	router := handler.NewRouter(questionSvc, answerSvc)
+	router := handler.NewRouter(questionService, answerService)
 
 	port := config.ServerPort
-	if port == "" {
-		port = "8080"
-	}
-
 	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      handler.LoggingMiddleware(router),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
+		ReadTimeout:  8 * time.Second,
+		WriteTimeout: 16 * time.Second,
+		IdleTimeout:  16 * time.Second,
 	}
-
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
+	
 	slog.Info("server starting", "port", port)
-
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server failed to start", "error", err)
 			os.Exit(1)
 		}
 	}()
+	
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	<-done
 	slog.Info("server shutting down gracefully")
@@ -76,7 +71,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Shutdown server
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("server shutdown failed", "error", err)
 		os.Exit(1)

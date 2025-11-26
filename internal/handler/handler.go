@@ -5,9 +5,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ppb03/question-answer-api/internal/service"
+	"github.com/ppb03/qna-api/internal/service"
 )
 
+// LoggingMiddleware adds logging to each request with measurement of the time spent on servicing it.
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -20,19 +21,18 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func NewRouter(questionSvc service.QuestionService, answerSvc service.AnswerService) *http.ServeMux {
+// NewRouter creates a new HTTP serve mux with registered handlers.
+func NewRouter(questionService service.QuestionService, answerService service.AnswerService) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// Questions routes
-	mux.HandleFunc("GET /questions/", GetAllQuestions(questionSvc))
-	mux.HandleFunc("POST /questions/", CreateQuestion(questionSvc))
-	mux.HandleFunc("GET /questions/{id}", GetQuestionWithAnswers(questionSvc))
-	mux.HandleFunc("DELETE /questions/{id}", DeleteQuestion(questionSvc))
+	mux.HandleFunc("POST /questions/", createQuestion(questionService))
+	mux.HandleFunc("DELETE /questions/{id}", deleteQuestion(questionService))
+	mux.HandleFunc("GET /questions/", getAllQuestions(questionService))
+	mux.HandleFunc("GET /questions/{id}", getQuestionWithAnswers(questionService))
 
-	// Answers routes
-	mux.HandleFunc("POST /questions/{id}/answers/", CreateAnswer(answerSvc))
-	mux.HandleFunc("GET /answers/{id}", GetAnswer(answerSvc))
-	mux.HandleFunc("DELETE /answers/{id}", DeleteAnswer(answerSvc))
+	mux.HandleFunc("POST /questions/{id}/answers/", createAnswer(answerService))
+	mux.HandleFunc("DELETE /answers/{id}", deleteAnswer(answerService))
+	mux.HandleFunc("GET /answers/{id}", getAnswer(answerService))
 
 	return mux
 }

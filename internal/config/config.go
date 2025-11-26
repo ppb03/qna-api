@@ -1,25 +1,43 @@
 package config
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
 
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 )
 
-var (
-	ServerPort string
-	DBDSN      string
-)
+const ServerPort = "8080"
+
+var DBDSN string
 
 func Load() error {
-	err := godotenv.Load()
-	if err != nil {
-		return err
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	return err
+	// }
 
-	// TODO: Обработка случая с пустыми значениями
-	ServerPort = os.Getenv("SERVER_PORT")
-	DBDSN = os.Getenv("DB_DSN")
+	dbHost := getEnv("DB_HOST", "db")
+	dbPort := getEnv("DB_PORT", "5432")
+	dbUser := getEnv("DB_USER", "postgres")
+	dbPassword := getEnv("DB_PASSWORD", "password")
+	dbName := getEnv("DB_NAME", "qna_db")
+	dbSSLMode := getEnv("DB_SSLMODE", "disable")
+
+	DBDSN = fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode,
+	)
 
 	return nil
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		slog.Warn(fmt.Sprintf("environment variable %s is missing, setting default value: %s", key, defaultValue))
+		return defaultValue
+	}
+	return value
 }
