@@ -6,8 +6,6 @@ import (
 
 	"github.com/ppb03/qna-api/internal/model"
 	"github.com/ppb03/qna-api/internal/repository"
-
-	"gorm.io/gorm"
 )
 
 type answerService struct {
@@ -20,28 +18,51 @@ func NewAnswerService(answerRepository repository.AnswerRepository, questionRepo
 	return &answerService{answerRepository: answerRepository, questionRepository: questionRepository}
 }
 
-func (s *answerService) Create(ctx context.Context, answer *model.Answer) error {
-	if answer.Text == "" {
-		return errors.New("answer text cannot be empty")
+func (as *answerService) Create(ctx context.Context, questionID uint, userID, text string) (*model.Answer, error) {
+	if text == "" {
+		return nil, ErrEmptyText
 	}
-	if answer.UserID == "" {
-		return errors.New("user ID cannot be empty")
+	
+	if userID == "" {
+		return nil, ErrEmptyUserID
 	}
 
-	_, err := s.questionRepository.GetByID(ctx, answer.QuestionID)
+	if !isValidUUID(userID) {
+		return nil, ErrInvalidUserID
+	}
+
+	_, err := as.questionRepository.GetByID(ctx, questionID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("question does not exist")
+		if errors.Is(err, repository.ErrQuestionNotFound) {
+			return nil, ErrQuestionNotExists
 		}
-		return err
+		return nil, internalError(err, ErrRepositoryFailure)
 	}
-	return s.answerRepository.Create(ctx, answer)
+
+	answer, err := as.answerRepository.Create(ctx, &model.Answer{QuestionID: questionID, UserID: userID, Text: text})
+	if err != nil {
+		return nil, internalError(err, ErrRepositoryFailure)
+	}
+	return answer, nil
 }
 
-func (s *answerService) GetByID(ctx context.Context, id uint) (*model.Answer, error) {
-	return s.answerRepository.GetByID(ctx, id)
+func (as *answerService) Delete(ctx context.Context, id uint) error {
+	if err := as.answerRepository.Delete(ctx, id); err != nil {
+		if errors.Is(err, repository.ErrAnswerNotFound) {
+			return ErrAnswerNotExists
+		}
+		return internalError(err, ErrRepositoryFailure)
+	}
+	return nil
 }
 
-func (s *answerService) Delete(ctx context.Context, id uint) error {
-	return s.answerRepository.Delete(ctx, id)
+func (as *answerService) GetByID(ctx context.Context, id uint) (*model.Answer, error) {
+	answer, err := as.answerRepository.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrAnswerNotFound) {
+			return nil, ErrAnswerNotExists
+		}
+		return nil, internalError(err, ErrRepositoryFailure)
+	}
+	return answer, nil
 }

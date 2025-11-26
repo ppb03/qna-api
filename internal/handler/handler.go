@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"net/http"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/ppb03/qna-api/internal/service"
@@ -27,12 +27,33 @@ func NewRouter(questionService service.QuestionService, answerService service.An
 
 	mux.HandleFunc("POST /questions/", createQuestion(questionService))
 	mux.HandleFunc("DELETE /questions/{id}", deleteQuestion(questionService))
+	mux.HandleFunc("GET /questions/{id}", getQuestionByID(questionService))
 	mux.HandleFunc("GET /questions/", getAllQuestions(questionService))
-	mux.HandleFunc("GET /questions/{id}", getQuestionWithAnswers(questionService))
 
 	mux.HandleFunc("POST /questions/{id}/answers/", createAnswer(answerService))
 	mux.HandleFunc("DELETE /answers/{id}", deleteAnswer(answerService))
 	mux.HandleFunc("GET /answers/{id}", getAnswer(answerService))
 
 	return mux
+}
+
+// ! Seems sloppy.
+func errorStatusCode(err error) int {
+	serviceErrMapping := map[error]int{
+		service.ErrEmptyText:     http.StatusBadRequest,
+		service.ErrEmptyUserID:   http.StatusBadRequest,
+		service.ErrInvalidUserID: http.StatusBadRequest,
+
+		service.ErrQuestionNotExists: http.StatusNotFound,
+		service.ErrAnswerNotExists:   http.StatusNotFound,
+
+		service.ErrRepositoryFailure: http.StatusInternalServerError,
+	}
+
+	statusCode, ok := serviceErrMapping[err]
+	if !ok {
+		statusCode = http.StatusInternalServerError
+	}
+
+	return statusCode
 }

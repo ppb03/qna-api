@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ppb03/qna-api/internal/model"
 
@@ -17,18 +18,26 @@ func NewPostgresQuestionRepository(db *gorm.DB) QuestionRepository {
 	return &postgresQuestionRepository{db: db}
 }
 
-func (r *postgresQuestionRepository) Create(ctx context.Context, question *model.Question) error {
-	return r.db.WithContext(ctx).Create(question).Error
+func (r *postgresQuestionRepository) Create(ctx context.Context, question *model.Question) (*model.Question, error) {
+	return question, r.db.WithContext(ctx).Create(question).Error
 }
 
 func (r *postgresQuestionRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&model.Question{}, id).Error
+	if err := r.db.WithContext(ctx).Delete(&model.Question{}, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrQuestionNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *postgresQuestionRepository) GetByID(ctx context.Context, id uint) (*model.Question, error) {
 	var question model.Question
-	err := r.db.WithContext(ctx).First(&question, id).Error
-	if err != nil {
+	if err := r.db.WithContext(ctx).Preload("Answers").First(&question, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrQuestionNotFound
+		}
 		return nil, err
 	}
 	return &question, nil
@@ -38,13 +47,4 @@ func (r *postgresQuestionRepository) GetAll(ctx context.Context) ([]model.Questi
 	var questions []model.Question
 	err := r.db.WithContext(ctx).Find(&questions).Error
 	return questions, err
-}
-
-func (r *postgresQuestionRepository) GetWithAnswers(ctx context.Context, id uint) (*model.Question, error) {
-	var question model.Question
-	err := r.db.WithContext(ctx).Preload("Answers").First(&question, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &question, nil
 }

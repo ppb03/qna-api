@@ -5,27 +5,30 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ppb03/qna-api/internal/model"
 	"github.com/ppb03/qna-api/internal/service"
 )
 
-func createAnswer(answerSvc service.AnswerService) http.HandlerFunc {
+func createAnswer(svc service.AnswerService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var answer model.Answer
-		if err := json.NewDecoder(r.Body).Decode(&answer); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
 		questionID, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {
 			http.Error(w, "invalid question id", http.StatusBadRequest)
 			return
 		}
-		answer.QuestionID = uint(questionID)
 
-		if err := answerSvc.Create(r.Context(), &answer); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		rbody := struct {
+			UserID string `json:"user_id"`
+			Text string `json:"text"`
+		}{}
+
+		if err := json.NewDecoder(r.Body).Decode(&rbody); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		answer, err := svc.Create(r.Context(), uint(questionID), rbody.UserID, rbody.Text)
+		if err != nil {
+			http.Error(w, err.Error(), errorStatusCode(err))
 			return
 		}
 
@@ -35,7 +38,7 @@ func createAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	}
 }
 
-func getAnswer(answerSvc service.AnswerService) http.HandlerFunc {
+func getAnswer(svc service.AnswerService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {
@@ -43,14 +46,9 @@ func getAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 			return
 		}
 
-		answer, err := answerSvc.GetByID(r.Context(), uint(id))
+		answer, err := svc.GetByID(r.Context(), uint(id))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if answer == nil {
-			http.Error(w, "answer not found", http.StatusNotFound)
+			http.Error(w, err.Error(), errorStatusCode(err))
 			return
 		}
 
@@ -59,7 +57,7 @@ func getAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 	}
 }
 
-func deleteAnswer(answerSvc service.AnswerService) http.HandlerFunc {
+func deleteAnswer(svc service.AnswerService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
 		if err != nil {
@@ -67,8 +65,8 @@ func deleteAnswer(answerSvc service.AnswerService) http.HandlerFunc {
 			return
 		}
 
-		if err := answerSvc.Delete(r.Context(), uint(id)); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err := svc.Delete(r.Context(), uint(id)); err != nil {
+			http.Error(w, err.Error(), errorStatusCode(err))
 			return
 		}
 
