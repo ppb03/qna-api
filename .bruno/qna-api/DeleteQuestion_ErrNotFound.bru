@@ -1,0 +1,11 @@
+meta {
+  name: DeleteQuestion_ErrQuestionNotExists
+  type: http
+  seq: 1
+}
+
+delete {
+  url: http://localhost:8080/questions/999
+  body: none
+  auth: none
+}

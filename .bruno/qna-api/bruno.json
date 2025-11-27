@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "qna-api",
+  "name": "qna-api-default",
   "type": "collection",
   "ignore": [
     "node_modules",

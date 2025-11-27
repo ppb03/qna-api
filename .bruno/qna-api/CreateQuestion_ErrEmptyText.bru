@@ -1,0 +1,17 @@
+meta {
+  name: CreateQuestion_ErrEmptyText
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/questions/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "text": ""
+  }
+}

@@ -1,0 +1,18 @@
+meta {
+  name: CreateAnswer_Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/questions/2/answers
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "text": "Test answer"
+  }
+}

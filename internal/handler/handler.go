@@ -37,7 +37,7 @@ func NewRouter(questionService service.QuestionService, answerService service.An
 	return mux
 }
 
-// ! Seems sloppy.
+// ! Костыль.
 func errorStatusCode(err error) int {
 	serviceErrMapping := map[error]int{
 		service.ErrEmptyText:     http.StatusBadRequest,

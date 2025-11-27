@@ -13,7 +13,7 @@ import (
 // Client-side errors
 var (
 	ErrEmptyText         = errors.New("text cannot be empty")
-	ErrEmptyUserID       = errors.New("user ID cannot be empty")
+	ErrEmptyUserID       = errors.New("user ID cannot be empty") // ! Не имеет смысла при имеющейся ErrInvalidUserID
 	ErrInvalidUserID     = errors.New("user ID must be a valid UUID")
 	ErrQuestionNotExists = errors.New("no question with such ID")
 	ErrAnswerNotExists   = errors.New("no answer with such ID")
@@ -61,7 +61,7 @@ func internalError(err, errClass error) error {
 	return joinedErr
 }
 
-// ! Should have used the uuid.UUID type from the external library for UserID initially, but I thought of it too late.
+// ! Нужно было использовать uuid.UUID из внешней библиотеки, но я подумал об этом слишком поздно
 func isValidUUID(uuid string) bool {
 	uuidRegex := regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
 	return uuidRegex.MatchString(uuid)

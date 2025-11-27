@@ -1,0 +1,11 @@
+meta {
+  name: DeleteAnswer_ErrAnswerNotExists
+  type: http
+  seq: 1
+}
+
+delete {
+  url: http://localhost:8080/answers/999
+  body: none
+  auth: none
+}
