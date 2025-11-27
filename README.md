@@ -7,7 +7,7 @@ RESTful API для системы вопросов и ответов. Позво
 
 ## Установка и запуск
 
-**1. Склонируйте этот репозиторий:**
+**1. Склонируйте репозиторий:**
 ```sh
 git clone https://github.com/ppb03/qna-api.git && cd qna-api
 ```
@@ -24,7 +24,7 @@ sudo docker compose up --build -d
 
 **4. Запустите миграции через goose:**
 ```sh
-docker-compose --profile tools run --rm migrator
+sudo docker compose --profile tools run --rm migrator
 ```
 
 **5. Приложение готово к работе. Последующие запуски не требуют сборки и запуска миграций:**
