@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-
-	// "github.com/joho/godotenv"
 )
 
 const ServerPort = "8080"
@@ -13,10 +11,6 @@ const ServerPort = "8080"
 var DBDSN string
 
 func Load() error {
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	return err
-	// }
 
 	dbHost := getEnv("DB_HOST", "db")
 	dbPort := getEnv("DB_PORT", "5432")

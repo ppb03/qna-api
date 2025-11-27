@@ -12,7 +12,6 @@ import (
 
 	"github.com/ppb03/qna-api/internal/config"
 	"github.com/ppb03/qna-api/internal/handler"
-	"github.com/ppb03/qna-api/internal/model"
 	"github.com/ppb03/qna-api/internal/service"
 	"github.com/ppb03/qna-api/internal/repository"
 
@@ -29,11 +28,6 @@ func main() {
 	db, err := gorm.Open(postgres.Open(config.DBDSN), &gorm.Config{})
 	if err != nil {
 		slog.Error("failed to connect to database: " + err.Error())
-		os.Exit(1)
-	}
-
-	if err := db.AutoMigrate(&model.Question{}, &model.Answer{}); err != nil {
-		slog.Error("failed to run migrations", "error", err)
 		os.Exit(1)
 	}
 
@@ -54,10 +48,10 @@ func main() {
 		IdleTimeout:  16 * time.Second,
 	}
 	
-	slog.Info("server starting", "port", port)
+	slog.Info("server is starting on port :" + port)
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("server failed to start", "error", err)
+			slog.Error("server failed to start: " + err.Error())
 			os.Exit(1)
 		}
 	}()

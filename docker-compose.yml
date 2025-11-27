@@ -1,62 +1,51 @@
 services:
-  app:
-   build: .
-   ports:
-    - "8080:8080"
-   depends_on:
-    db:
-     condition: service_healthy
-   environment:
-     - DB_USER=postgres
-     - DB_HOST=db
-     - DB_PASSWORD=password
-     - DB_NAME=qna_db
-     - DB_PORT=5432
-     - DB_SSLMODE=disable
-   env_file:
-     - .env
-   restart: unless-stopped
-  
   db:
-   image: postgres:15-alpine
-   environment:
-    - POSTGRES_DB=qna_db
-    - POSTGRES_USER=postgres
-    - POSTGRES_PASSWORD=password
-   ports:
-    - "5432:5432"
-   volumes:
-    - postgres_data:/var/lib/postgresql/data
-   restart: unless-stopped
-   healthcheck:
-     test: ["CMD-SHELL", "pg_isready -U postgres -d qna_db"]
-     interval: 5s
-     timeout: 5s
-     retries: 5
-     start_period: 10s
-  
-  migrations:
-   build: .
-   depends_on:
-    db:
-     condition: service_healthy
-   environment:
-    - DB_HOST=db
-    - DB_PORT=5432
-    - DB_USER=postgres
-    - DB_PASSWORD=password
-    - DB_NAME=qna_db
-   env_file:
-    - .env
-   command: >
-    sh -c "
-        echo 'Checking migration status...' &&
-        goose -dir /app/migrations postgres 'user=postgres password=password dbname=qna_db host=db sslmode=disable' status ||
-        (echo 'Initializing migrations...' &&
-         goose -dir /app/migrations postgres 'user=postgres password=password dbname=qna_db host=db sslmode=disable' up) &&
-        echo 'Migrations completed successfully'
-      "
-   profiles: ["migrations"]
+    image: postgres:18-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-volumes:
-  postgres_data:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./main
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  migrator:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: goose -dir ./migrations postgres "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=${DB_SSLMODE}" up
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+    depends_on:
+      db:
+        condition: service_healthy
