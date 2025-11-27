@@ -27,8 +27,8 @@ go.work.sum
 # env file
 .env
 
-# Docker PostgreSQL files
-postgres_data/
+# PostgreSQL files
+data/
 
 # Editor/IDE
 # .idea/

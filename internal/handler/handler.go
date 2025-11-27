@@ -1,3 +1,4 @@
+// Package handler implements HTTP handlers and middleware for question and answer management.
 package handler
 
 import (

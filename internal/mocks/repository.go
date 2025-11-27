@@ -1,3 +1,6 @@
+// Package mocks contains mock implementations of repository interfaces.
+//
+// These mocks simulate database interactions without requiring actual database connections.
 package mocks
 
 import (

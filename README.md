@@ -9,32 +9,27 @@ RESTful API для системы вопросов и ответов. Позво
 
 **1. Склонируйте этот репозиторий:**
 ```sh
-git clone https://github.com/ppb03/qna-api.git
+git clone https://github.com/ppb03/qna-api.git && cd qna-api
 ```
 
 **2. Создайте `.env` файл, можно использовать файл-пример `.env.example`:**
-```env
-DB_USER=postgres
-DB_PASSWORD=password
-DB_NAME=qna_db
-DB_HOST=localhost
-DB_PORT=5432
-DB_SSLMODE=disable
+```sh
+mv .env.example .env
 ```
 
 **3. Запустите сборку приложения и создание БД:**
 ```sh
-docker compose build
+sudo docker compose up --build -d
 ```
 
 **4. Запустите миграции через goose:**
 ```sh
-docker compose --profile migrations run migrations
+docker-compose --profile tools run --rm migrator
 ```
 
-**5. Запустите приложение:**
+**5. Приложение готово к работе. Последующие запуски не требуют сборки и запуска миграций:**
 ```sh
-docker compose up
+sudo docker compose up
 ```
 
 **\* Примеры запросов к API:**
@@ -43,7 +38,7 @@ docker compose up
 curl -X POST http://localhost:8080/questions/ \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Как работает Docker Compose?"
+    "text": "Lorem ipsum dolor sit amet"
   }'
 
 # Получение списка всех ответов
@@ -51,11 +46,6 @@ curl -X GET http://localhost:8080/questions/
 
 # Получение конкретного вопроса с ответами
 curl -X GET http://localhost:8080/questions/1/
-```
-
-**\* Миграции могут быть запущены отдельно:**
-```sh
-docker compose build migrations
 ```
 
 ## Методы API
@@ -81,4 +71,4 @@ docker compose build migrations
 **Логика:**
 - *Нельзя создать ответ к несуществующему вопросу.*
 - *Один и тот же пользователь может оставлять несколько ответов на один вопрос.*
-- *При удалении вопроса должны удаляться все его ответы (каскадно).*
+- *При удалении вопроса удаляются все его ответы (каскадно).*
